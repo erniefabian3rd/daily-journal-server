@@ -1,8 +1,10 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-from views import get_all_entries, get_single_entry, get_entries_by_search, delete_entry, create_journal_entries
+from views import get_all_entries, get_single_entry, get_entries_by_search, delete_entry, create_journal_entries, update_entry
 from views import get_all_moods, get_single_mood
+from views import get_all_tags, get_single_tag
+from views import get_all_entry_tags, get_single_entry_tag
 
 class HandleRequests(BaseHTTPRequestHandler):
     """Controls the functionality of any GET, PUT, POST, DELETE requests to the server
@@ -30,6 +32,21 @@ class HandleRequests(BaseHTTPRequestHandler):
                 else:
                     self._set_headers(200)
                     response = get_all_moods()
+            elif resource == "tags":
+                if id is not None:
+                    self._set_headers(200)
+                    response = get_single_tag(id)
+                else:
+                    self._set_headers(200)
+                    response = get_all_tags()
+            elif resource == "entry_tags":
+                if id is not None:
+                    self._set_headers(200)
+                    response = get_single_entry_tag(id)
+                else:
+                    self._set_headers(200)
+                    response = get_all_entry_tags()
+
         
         else:
             (resource, query) = parsed
@@ -53,33 +70,24 @@ class HandleRequests(BaseHTTPRequestHandler):
             new_entry = create_journal_entries(post_body)
             self.wfile.write(json.dumps(new_entry).encode())
 
-    # def do_PUT(self):
-    #     """Handles PUT requests to the server"""
-    #     content_len = int(self.headers.get('content-length', 0))
-    #     post_body = self.rfile.read(content_len)
-    #     post_body = json.loads(post_body)
+    def do_PUT(self):
+        """Handles PUT requests to the server"""
+        content_len = int(self.headers.get('content-length', 0))
+        post_body = self.rfile.read(content_len)
+        post_body = json.loads(post_body)
 
-    #     (resource, id) = self.parse_url(self.path)
+        (resource, id) = self.parse_url(self.path)
 
-    #     success = False
-    #     if resource == "animals":
-    #         success = update_animal(id, post_body)
+        success = False
+        if resource == "entries":
+            success = update_entry(id, post_body)
 
-    #     if resource == "locations":
-    #         update_location(id, post_body)
+        if success:
+            self._set_headers(204)
+        else:
+            self._set_headers(404)
 
-    #     if resource == "employees":
-    #         update_employee(id, post_body)
-
-    #     if resource == "customers":
-    #         update_customer(id, post_body)
-
-    #     if success:
-    #         self._set_headers(204)
-    #     else:
-    #         self._set_headers(404)
-
-    #     self.wfile.write("".encode())
+        self.wfile.write("".encode())
 
 
     def _set_headers(self, status):
